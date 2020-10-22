@@ -126,18 +126,18 @@ class MyTool:
 #  メインパート
 # ========================================================================== #
 def main():
-  # コマンドライン引数の受け取り
-  args = check_args()
-  assert args != 1, "Abnormality in argument."
+    # コマンドライン引数の受け取り
+    args = check_args()
+    assert args != 1, "Abnormality in argument."
 
-  tool = MyTool(args)
+    tool = MyTool(args)
 
-  filename = args['filename']
-  targetdir = f'./screen_shots[{filename}]'
+    filename = args['filename']
+    targetdir = f'./screen_shots[{filename}]'
 
-  # 保存
-  tool.save_all_frames()
-  tool.countfiles()
+    # 保存
+    tool.save_all_frames()
+    tool.countfiles()
 
 if __name__ == "__main__":
     main()
