@@ -1,9 +1,11 @@
 import os
+import re
 import argparse
 import time
 import datetime
 import cv2
 import youtube_dl
+# import json
 
 # ========================================================================== #
 #  関数名: check_args
@@ -77,14 +79,16 @@ class MyTool:
 
         with youtube_dl.YoutubeDL(options) as ydl:
             result = ydl.extract_info(url, download=True)
-            filename = result["title"].replace('|', '_')
+            # 文字列置換は正規表現で拾えるようにここに記載していく
+            filename = re.sub(r"[|/]", "_", result["title"])
             self.video_name = f'{filename}.mp4'
-
-            # self.video_name = f'{result["title"]}.mp4'
             self.img_path = f'./screen_shots[{self.video_name}]'
+            # with open('result.json', 'w') as f:
+            #     json.dump(result, f, indent=4)
             print('='*60)
-            self.printLog("INFO", f"id:           {result['id']}")
             self.printLog("INFO", f'title:        {filename}')
+            self.printLog("INFO", f"id:           {result['id']}")
+            self.printLog("INFO", f'dl_format:    {result["format"]}')
             self.printLog("INFO", f'uploader:     {result["uploader"]}')
             self.printLog("INFO", f'uploader_url: {result["uploader_url"]}')
             self.printLog("INFO", f'channel_id:   {result["channel_id"]}')
@@ -160,6 +164,7 @@ class MyTool:
             else:
                 # ログ作業後処理
                 message = f'save_all_frames completed.'
+                print('\n')
                 self.printLog("INFO", f'[ OK ] {message}')
                 return
 
@@ -198,7 +203,7 @@ def main():
 
     tool = MyTool(args)
 
-    url = 'https://www.youtube.com/watch?v=BoZ0Zwab6Oc'
+    # mp4ダウンロード
     tool.dl_youtube(args['url'])
 
     # 保存
