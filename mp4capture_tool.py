@@ -1,7 +1,9 @@
 import os
-import cv2
 import argparse
+import time
 import datetime
+import cv2
+import youtube_dl
 
 # ========================================================================== #
 #  関数名: check_args
@@ -16,14 +18,14 @@ def check_args():
     parser = argparse.ArgumentParser(add_help=False)
 
     # 引数の追加
-    parser.add_argument("-f", help="filename", required=True)
-    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("-url", help="url", required=True)
+    # parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
 
     try:
         result = {}
-        result["filename"] = args.f
-        result["debug"] = args.debug
+        result["url"] = args.url
+        # result["debug"] = args.debug
         result["error_code"] = 1
 
         return result
@@ -41,11 +43,10 @@ class MyTool:
     # [Dont Touch] インスタンス変数
     def __init__(self, args):
         self.def_name = "init"
-        self.video_path = args['filename']
-        self.img_path = f'./screen_shots[{self.video_path}]'
-        self.debugflag = args["debug"]
+        # self.video_path = args['filename']
+
+        # self.debugflag = args["debug"]
         self._error_code = args["error_code"]
-        self.log_path = './Log/{datetime.datetime.now()}'
 
     # ====================================================================== #
     #  関数名: printLog
@@ -53,10 +54,47 @@ class MyTool:
     #  説明: ログ
     # ====================================================================== #
     def printLog(self, level, message):
-        with open(r"self.log_path", 'a') as f:
-            f.write(f'[{level}] {message}\n')
-        if self.debugflag:
-            print(f'[{level}] {message}')
+        # with open(r"self.log_path", 'a') as f:
+        #     f.write(f'[{level}] {message}\n')
+        # if self.debugflag:
+        print(f'[{level}] {message}')
+
+    # ========================================================================== #
+    #  関数名: dl_youtube
+    # -------------------------------------------------------------------------- #
+    #  説明: YouTube から動画をmp4形式でダウンロード
+    # ========================================================================== #
+    def dl_youtube(self, url):
+        self.def_name = "dl_youtube"
+        description = f'Processing of "{self.def_name}" function is started.'
+        self.printLog("INFO", f'[ OK ] {description}')
+
+        # メインコード
+        options = {
+            'outtmpl': '%(title)s.%(ext)s',
+            'format':'bestvideo'
+        }
+
+        with youtube_dl.YoutubeDL(options) as ydl:
+            result = ydl.extract_info(url, download=True)
+            filename = result["title"].replace('|', '_')
+            self.video_name = f'{filename}.mp4'
+
+            # self.video_name = f'{result["title"]}.mp4'
+            self.img_path = f'./screen_shots[{self.video_name}]'
+            print('='*60)
+            self.printLog("INFO", f"id:           {result['id']}")
+            self.printLog("INFO", f'title:        {filename}')
+            self.printLog("INFO", f'uploader:     {result["uploader"]}')
+            self.printLog("INFO", f'uploader_url: {result["uploader_url"]}')
+            self.printLog("INFO", f'channel_id:   {result["channel_id"]}')
+            self.printLog("INFO", f'channel_url:  {result["channel_url"]}')
+            self.printLog("INFO", f'upload_date:  {result["upload_date"]}')
+            print('='*60)
+
+        # ログ作業後処理
+        message = f'dl_youtube completed.'
+        self.printLog("INFO", f'[ OK ] {message}')
 
     # ========================================================================== #
     #  関数名: save_all_frames
@@ -69,7 +107,7 @@ class MyTool:
         self.printLog("INFO", f'[ OK ] {description}')
 
         # メインコード
-        cap = cv2.VideoCapture(self.video_path)
+        cap = cv2.VideoCapture(self.video_name)
         if not cap.isOpened():
             self.printLog("FATAL", f'[ NG ] File not found.')
             return
@@ -80,23 +118,52 @@ class MyTool:
 
         base_path = os.path.join(self.img_path, basename)
         digit = len(str(int(cap.get(cv2.CAP_PROP_FRAME_COUNT))))
-
+        # ファイル名用
         n = 0
-
+        # 動く文字用
+        num = 1
+        # クロック
+        clock = 0.1
         while True:
             ret, frame = cap.read()
             if ret:
                 filename = f'{base_path}_{str(n).zfill(digit)}.{ext}'
                 cv2.imwrite(filename, frame)
                 message = f'Save "{filename}"'
-                self.printLog("INFO", f'[ OK ] {message}')
+                # self.printLog("INFO", f'[ OK ] {message}')
                 n += 1
+
+                # ====================================================
+                # ここから文字が動くコード
+                # while num != 0:
+                moji = 'Please wait a moment. Capturing now.'
+                space = ' ' * num
+                count = num - len(moji)
+
+                if num < len(moji):
+                    # time.sleep(clock)
+                    # 文字の描写の部分。numの値が増加するほど横に移動する
+                    print(f'\r{space} {moji}', end='')
+                    num += 1
+                else:
+                    # 右に全角スペース20個分移動したら、右にoutして、左からinする部分
+                    if count <= len(moji):
+                        # time.sleep(clock)
+                        a = moji[len(moji) - count:]
+                        b = ' ' * (num - count)
+                        c = moji[:(len(moji) - count)]
+                        print(f'\r{a} {b} {c}', end='')
+                        num += 1
+                    else:
+                        num = 1
+                # ====================================================
             else:
+                # ログ作業後処理
+                message = f'save_all_frames completed.'
+                self.printLog("INFO", f'[ OK ] {message}')
                 return
 
-        # ログ作業後処理
-        message = f'save_all_frames completed.'
-        self.printLog("INFO", f'[ OK ] {message}')
+
 
     # ========================================================================== #
     #  関数名: countfiles
@@ -131,8 +198,8 @@ def main():
 
     tool = MyTool(args)
 
-    filename = args['filename']
-    targetdir = f'./screen_shots[{filename}]'
+    url = 'https://www.youtube.com/watch?v=BoZ0Zwab6Oc'
+    tool.dl_youtube(args['url'])
 
     # 保存
     tool.save_all_frames()
