@@ -2,6 +2,8 @@
 ## How to use
 `mp4capture_tool.py -url "URL"`
 
+Youtube動画を1フレームごとに画像で保存
+
 ## pip module
 `pip install --upgrade pip`
 
